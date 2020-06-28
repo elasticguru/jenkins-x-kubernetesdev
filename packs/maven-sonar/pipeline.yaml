@@ -1,0 +1,30 @@
+extends:
+  import: kubernetes
+  file: maven/pipeline.yaml
+env:
+- name: _JAVA_OPTIONS
+  value: "-XX:+UnlockExperimentalVMOptions -XX:+UseCGroupMemoryLimitForHeap -Dsun.zip.disableMemoryMapping=true -XX:+UseParallelGC -XX:MinHeapFreeRatio=5 -XX:MaxHeapFreeRatio=10 -XX:GCTimeRatio=4 -XX:AdaptiveSizePolicyWeight=90 -Xms128m -Xmx2048m"
+- name: SONARQUBE_URL
+  valueFrom:
+    secretKeyRef:
+      key: sonarqubeUrl
+      name: sonarqube-token-secret
+- name: SONARQUBE_TOKEN
+  valueFrom:
+    secretKeyRef:
+      key: sonarqubeToken
+      name: sonarqube-token-secret
+pipelines:
+  pullRequest:
+    postBuild:
+      steps:
+      - command: mvn sonar:sonar -Dsonar.host.url=$SONARQUBE_URL -Dsonar.login=$SONARQUBE_TOKEN
+        comment: Runs sonarqube analysis with mvn command
+        name: sonarqube-analysis
+  release:
+    promote:
+      steps:
+      - command: mvn sonar:sonar -Dsonar.host.url=$SONARQUBE_URL -Dsonar.login=$SONARQUBE_TOKEN
+        comment: Runs sonarqube analysis with mvn command
+        name: sonarqube-analysis
+
